@@ -1,0 +1,30 @@
+services:
+  mineru-web:
+    build:
+      context: .
+    image: mineru-web:1.0.0
+    container_name: mineru-web
+    restart: unless-stopped
+    ports:
+      - "28081:8000"
+    environment:
+      - MINERU_WEB_DATA_DIR=/data
+      - TZ=Asia/Shanghai
+      # MinerU 服务地址（首次启动默认值，之后可在界面“设置”中在线修改，
+      # 修改后写入 /data/config/config.json，重启容器不失效）
+      - MINERU_WEB_BASE_URL=http://172.171.16.221:28001
+      # 可选：覆盖默认用户名/初始密码（admin / admin123）
+      # - MINERU_WEB_USERNAME=admin
+      # - MINERU_WEB_PASSWORD=admin123
+    volumes:
+      - ./data:/data
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    # 显式指定网段，避免 Docker 默认地址池分配出 192.168.128.0/20 之类
+    # 与办公网段（如 192.168.130.0/24）冲突的子网，导致宿主机路由被污染。
+    ipam:
+      config:
+        - subnet: 10.200.0.0/16

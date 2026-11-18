@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>MinerU Web Console — 文档转换控制台</title>
+<link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div class="grain"></div>
+
+<!-- ============ Login ============ -->
+<div id="login-view" class="view view-center">
+  <div class="login-card reveal">
+    <div class="brand-mark">
+      <span class="brand-glyph">M</span>
+      <div class="brand-word">
+        <div class="brand-title">MinerU</div>
+        <div class="brand-sub">Web Console</div>
+      </div>
+    </div>
+    <p class="login-tagline">文档转 Markdown · 自托管解析控制台</p>
+    <form id="login-form" class="login-form" autocomplete="off">
+      <label class="field">
+        <span class="field-label">用户名</span>
+        <input id="login-username" type="text" placeholder="admin" autocomplete="username"/>
+      </label>
+      <label class="field">
+        <span class="field-label">密码</span>
+        <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"/>
+      </label>
+      <div id="login-error" class="login-error"></div>
+      <button type="submit" class="btn btn-primary btn-block">登 录</button>
+    </form>
+    <p class="login-foot">UTC+8 · 凭据保存在服务端配置中</p>
+  </div>
+</div>
+
+<!-- ============ App ============ -->
+<div id="app-view" class="view hidden">
+  <header class="topbar">
+    <div class="brand-mark brand-mark-sm">
+      <span class="brand-glyph">M</span>
+      <div class="brand-word">
+        <div class="brand-title">MinerU</div>
+        <div class="brand-sub">Web Console</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button id="mineru-status" class="status-pill" title="点击测试连接">
+        <span class="dot"></span><span id="mineru-status-text">未连接</span>
+      </button>
+      <button id="btn-settings" class="btn btn-ghost">设置</button>
+      <div class="user-chip"><span class="user-avatar"></span><span id="current-user">—</span></div>
+      <button id="btn-logout" class="btn btn-ghost">退出</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Upload panel -->
+    <section class="panel upload-panel reveal">
+      <div class="panel-head">
+        <h2>新建转换任务</h2>
+        <span class="panel-num">01</span>
+      </div>
+
+      <div id="dropzone" class="dropzone">
+        <input type="file" id="file-input" multiple hidden
+               accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx"/>
+        <div class="dropzone-inner">
+          <div class="dropzone-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>
+            </svg>
+          </div>
+          <p class="dropzone-title">拖拽文件到这里，或 <span class="link">点击选择</span></p>
+          <p class="dropzone-hint">PDF · 图片 (png/jpg/tif/bmp/webp) · Office (doc/docx/xls/xlsx/ppt/pptx)</p>
+        </div>
+      </div>
+
+      <div id="selected-files" class="selected-files hidden"></div>
+
+      <div class="options">
+        <div class="option-group">
+          <span class="field-label">解析档位</span>
+          <div class="segmented" id="tier-select">
+            <button data-tier="flash" class="seg active">flash<span>快速</span></button>
+            <button data-tier="basic" class="seg">basic<span>基础</span></button>
+            <button data-tier="standard" class="seg">standard<span>标准</span></button>
+          </div>
+        </div>
+        <div class="option-group">
+          <span class="field-label">输出格式</span>
+          <div class="chips" id="format-select">
+            <button data-fmt="default" class="chip active">Markdown</button>
+            <button data-fmt="docx" class="chip">docx</button>
+            <button data-fmt="html" class="chip">html</button>
+            <button data-fmt="latex" class="chip">latex</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-submit" class="btn btn-primary btn-block btn-submit">
+        <span id="btn-submit-label">开始转换</span>
+      </button>
+    </section>
+
+    <!-- Tasks panel -->
+    <section class="panel tasks-panel reveal">
+      <div class="panel-head">
+        <h2>转换任务</h2>
+        <span class="panel-num">02</span>
+      </div>
+      <div id="tasks-list" class="tasks-list">
+        <div class="empty-state">
+          <div class="empty-glyph">∅</div>
+          <p>还没有任务</p>
+          <p class="hint">上传文件并开始转换后，任务会实时显示在这里</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ Settings modal ============ -->
+<div id="settings-modal" class="modal hidden">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>设置</h3>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <label class="field">
+        <span class="field-label">MinerU 服务地址</span>
+        <input id="cfg-url" type="text" placeholder="http://172.171.16.221:28001"/>
+      </label>
+      <div class="modal-row">
+        <button id="btn-test" class="btn btn-ghost">测试连接</button>
+        <span id="test-result" class="test-result"></span>
+      </div>
+      <hr class="divider"/>
+      <div class="modal-section-title">修改登录凭据（可选）</div>
+      <label class="field">
+        <span class="field-label">用户名</span>
+        <input id="cfg-username" type="text" placeholder="admin"/>
+      </label>
+      <label class="field">
+        <span class="field-label">新密码（留空则不修改）</span>
+        <input id="cfg-password" type="password" placeholder="••••••••"/>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button id="btn-save-config" class="btn btn-primary">保存配置</button>
+    </div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
