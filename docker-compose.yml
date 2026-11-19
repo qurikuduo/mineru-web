@@ -2,7 +2,7 @@ services:
   mineru-web:
     build:
       context: .
-    image: mineru-web:1.0.0
+    image: mineru-web:1.1.0
     container_name: mineru-web
     restart: unless-stopped
     ports:

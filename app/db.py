@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS task_files (
     error TEXT,
     result_url TEXT,
     result_path TEXT,
+    size INTEGER,
     FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_task_files_task ON task_files(task_id);
@@ -48,6 +49,7 @@ class DB:
         self._conn.execute("PRAGMA foreign_keys=ON")
         self._conn.executescript(_SCHEMA)
         self._conn.commit()
+        self._migrate()
 
     def _execute(self, sql, params=()):
         with self._lock:
@@ -58,6 +60,11 @@ class DB:
     def _query(self, sql, params=()):
         with self._lock:
             return self._conn.execute(sql, params).fetchall()
+
+    def _migrate(self):
+        cols = {r["name"] for r in self._query("PRAGMA table_info(task_files)")}
+        if "size" not in cols:
+            self._execute("ALTER TABLE task_files ADD COLUMN size INTEGER")
 
     # ---- tasks ----
     def create_task(self, task_id, mineru_task_id, tier, ocr_mode, output_formats, files):
@@ -70,8 +77,8 @@ class DB:
         )
         for f in files:
             self._execute(
-                "INSERT INTO task_files (task_id, file_name, file_id, status) VALUES (?,?,?,?)",
-                (task_id, f["file_name"], f.get("file_id"), "waiting-file"),
+                "INSERT INTO task_files (task_id, file_name, file_id, status, size) VALUES (?,?,?,?,?)",
+                (task_id, f["file_name"], f.get("file_id"), "waiting-file", f.get("size")),
             )
 
     def list_tasks(self):

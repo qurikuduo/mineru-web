@@ -14,6 +14,7 @@ from .config import Config, make_token
 from .db import DB
 from .logging_setup import setup_logging
 from .task_manager import TaskManager
+from .version import VERSION
 
 log = setup_logging()
 config = Config()
@@ -21,7 +22,7 @@ auth.init_config(config)
 database = DB()
 manager = TaskManager(config, database)
 
-app = FastAPI(title="MinerU Web Console", version="1.0.0")
+app = FastAPI(title="MinerU Web Console", version=VERSION)
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
@@ -42,7 +43,7 @@ def _shutdown():
 # ---- health (no auth) ----
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "mineru_base_url": config.get("mineru_base_url")}
+    return {"status": "ok", "mineru_base_url": config.get("mineru_base_url"), "version": VERSION}
 
 
 # ---- auth ----

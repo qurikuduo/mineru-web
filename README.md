@@ -7,10 +7,13 @@
 - **在线配置 MinerU 地址**：界面「设置」中可修改 MinerU 4.x 服务地址，改动实时写入宿主机卷，重启容器不失效。
 - **多文件上传**：支持 PDF、图片（png/jpg/tif/bmp/webp）、Office（doc/docx/xls/xlsx/ppt/pptx），一次可传多个。
 - **任务化转换**：每个上传批次作为一个任务，后台轮询 MinerU 状态并实时展示（上传中 / 处理中 / 已完成 / 部分完成 / 失败）。
+- **任务详情**：每个任务记录创建/开始/结束时间、耗时，以及每个文件的大小，卡片实时刷新。
 - **结果下载**：任务完成（或部分完成）后可一键下载打包的转换结果（markdown.md、middle_json.json、structured_content.json、图片等）。
 - **用户名密码认证**：HMAC 签名 Bearer Token（7 天有效期），密码以 PBKDF2 哈希存储，不落明文。
 - **持久化**：配置 / 任务库 / 转换结果 / 日志全部外挂到宿主机 `/data`，容器重建不丢数据。
 - **UTC+8 时区**：日志时间戳统一为 Asia/Shanghai。
+- **深浅色主题**：登录页与顶栏可一键切换浅色/深色配色，偏好保存在本地。
+- **版本号**：界面显示当前版本（`/api/health` 暴露），每次发布递增。
 
 ## 技术架构
 
@@ -28,6 +31,7 @@
 mineru-web/
 ├── app/
 │   ├── main.py            # FastAPI 路由（认证/配置/任务/下载/静态）
+│   ├── version.py         # 版本号（唯一来源，每次发布递增）
 │   ├── config.py          # 持久化配置（JSON 落盘 + 密码哈希 + Token）
 │   ├── db.py              # SQLite 任务/文件表
 │   ├── auth.py            # Bearer Token 依赖
@@ -59,6 +63,20 @@ docker compose up -d
 - `tasks.db` —— 任务与文件注册表（SQLite WAL）
 - `results/<task_id>/` —— 每个任务的转换结果（解包后）
 - `logs/app.log` —— 应用日志（10MB 滚动，保留 5 份）
+
+### 版本与内网镜像发布
+
+版本号集中在 `app/version.py`（同时用于 FastAPI 元数据、`/api/health` 与前端展示）。每次改动需递增该值，并同步更新 `docker-compose.yml` 的镜像 tag。
+
+发布到内网 Harbor：
+
+```bash
+cd /root/mineru-web
+DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose build
+docker tag mineru-web:1.1.0 harbor.nl.com/dz/mineru-web:1.1.0
+docker push harbor.nl.com/dz/mineru-web:1.1.0
+docker compose up -d
+```
 
 ## 配置说明
 

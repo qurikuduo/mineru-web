@@ -64,7 +64,8 @@ class TaskManager:
         # store locally
         self.database.create_task(
             task_id, mineru_task_id, tier, ocr_mode, output_formats,
-            [{"file_name": m["file_name"], "file_id": mineru_files.get(m["file_name"], {}).get("file_id")}
+            [{"file_name": m["file_name"], "file_id": mineru_files.get(m["file_name"], {}).get("file_id"),
+              "size": m["bytes"]}
              for m in meta],
         )
 
@@ -82,8 +83,10 @@ class TaskManager:
             except Exception as e:
                 self.database.update_file(task_id, name, status="failed", error=str(e))
 
-        self.database.update_task(task_id, status="running")
-        self.database.refresh_progress(task_id)
+        self.database.update_task(task_id, status="running", started_at=db._now())
+        status = self.database.refresh_progress(task_id)
+        if status in TERMINAL:
+            self.database.update_task(task_id, finished_at=db._now())
         return task_id
 
     # ---- polling ----
@@ -109,7 +112,6 @@ class TaskManager:
             self.database.update_task(task_id, status="failed", error=f"MinerU unreachable: {e}")
             return
 
-        self.database.update_task(task_id, started_at=detail.get("started_at"))
         for mf in detail.get("files", []):
             name = mf.get("file_name")
             status = mf.get("status")
@@ -124,8 +126,7 @@ class TaskManager:
 
         status = self.database.refresh_progress(task_id)
         if status in TERMINAL:
-            if detail.get("finished_at"):
-                self.database.update_task(task_id, finished_at=detail["finished_at"])
+            self.database.update_task(task_id, finished_at=db._now())
             if detail.get("error"):
                 self.database.update_task(task_id, error=str(detail["error"]))
 

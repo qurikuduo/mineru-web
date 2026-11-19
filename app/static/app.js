@@ -41,6 +41,10 @@
     btnSaveConfig: $('btn-save-config'),
     btnLogout: $('btn-logout'),
     btnSettings: $('btn-settings'),
+    btnTheme: $('btn-theme'),
+    btnThemeLogin: $('btn-theme-login'),
+    appVersion: $('app-version'),
+    loginVersion: $('login-version'),
   };
 
   // ---- toast ----
@@ -56,6 +60,36 @@
     t.textContent = msg;
     toastWrap.appendChild(t);
     setTimeout(() => t.remove(), 3200);
+  }
+
+  // ---- theme ----
+  const THEME_KEY = 'mineru_web_theme';
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  }
+  function initTheme() {
+    let t = 'dark';
+    try { t = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) {}
+    if (t !== 'light' && t !== 'dark') t = 'dark';
+    applyTheme(t);
+  }
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  }
+
+  // ---- version ----
+  async function loadVersion() {
+    try {
+      const res = await fetch('/api/health');
+      const d = await res.json().catch(() => ({}));
+      if (d && d.version) {
+        const v = 'v' + d.version;
+        if (els.appVersion) els.appVersion.textContent = v;
+        if (els.loginVersion) els.loginVersion.textContent = v;
+      }
+    } catch (e) {}
   }
 
   // ---- api ----
@@ -352,6 +386,17 @@
     return iso.replace('T', ' ').replace(/\+08:00$/, '');
   }
 
+  function fmtDuration(startIso, endIso) {
+    if (!startIso) return '—';
+    const start = new Date(startIso).getTime();
+    const end = endIso ? new Date(endIso).getTime() : Date.now();
+    if (isNaN(start) || isNaN(end) || end < start) return '—';
+    const s = Math.round((end - start) / 1000);
+    if (s < 60) return s + ' 秒';
+    if (s < 3600) return Math.floor(s / 60) + ' 分 ' + (s % 60) + ' 秒';
+    return Math.floor(s / 3600) + ' 时 ' + Math.floor((s % 3600) / 60) + ' 分';
+  }
+
   function taskCard(t) {
     const card = document.createElement('div');
     card.className = 'task-card';
@@ -378,6 +423,15 @@
     ].join(' · ');
     card.appendChild(meta);
 
+    const times = document.createElement('div');
+    times.className = 'task-meta task-meta--times';
+    times.textContent = [
+      '开始: ' + fmtTime(t.started_at || t.created_at),
+      '结束: ' + fmtTime(t.finished_at),
+      '耗时: ' + fmtDuration(t.started_at || t.created_at, t.finished_at),
+    ].join(' · ');
+    card.appendChild(times);
+
     const total = t.total_files || 0;
     const done = t.completed_files || 0;
     const pct = total ? Math.round((done / total) * 100) : 0;
@@ -400,10 +454,14 @@
         fn.className = 'fname';
         fn.textContent = f.file_name;
         fn.title = f.file_name;
+        const fsz = document.createElement('span');
+        fsz.className = 'fsize';
+        fsz.textContent = (f.size != null) ? fmtSize(f.size) : '';
         const fs = document.createElement('span');
         fs.className = 'fstatus ' + (f.status || '');
         fs.textContent = safeFileStatus(f.status);
         row.appendChild(fn);
+        row.appendChild(fsz);
         row.appendChild(fs);
         fwrap.appendChild(row);
       });
@@ -512,6 +570,8 @@
   function wire() {
     els.loginForm.addEventListener('submit', handleLogin);
     els.btnLogout.addEventListener('click', () => logout(true));
+    els.btnTheme.addEventListener('click', toggleTheme);
+    els.btnThemeLogin.addEventListener('click', toggleTheme);
 
     els.btnSettings.addEventListener('click', openModal);
     els.settingsModal.querySelectorAll('[data-close]').forEach((b) =>
@@ -548,6 +608,8 @@
   }
 
   // ---- boot ----
+  initTheme();
+  loadVersion();
   wire();
   if (state.token && state.username) {
     els.currentUser.textContent = state.username;
