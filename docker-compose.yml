@@ -10,7 +10,7 @@ services:
     environment:
       - MINERU_WEB_DATA_DIR=/data
       - TZ=Asia/Shanghai
-      # MinerU 服务地址（首次启动默认值，之后可在界面“设置”中在线修改，
+      # MinerU v4.x 服务地址（首次启动默认值，之后可在界面“设置”中在线修改，
       # 修改后写入 /data/config/config.json，重启容器不失效）
       - MINERU_WEB_BASE_URL=http://172.171.16.221:28001
       # 可选：覆盖默认用户名/初始密码（admin / admin123）
